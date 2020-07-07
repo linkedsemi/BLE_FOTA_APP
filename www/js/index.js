@@ -135,6 +135,7 @@ var app = {
             break;
             case fota_ctrl_type.INTEGRITY_CHECK_RSP:
                 console.log("integrity check status: " + data[1]);
+                document.getElementById("ota_text").innerHTML = " OTA complete, status:" + data[1];
             break;
             default:
                 console.error("error indication type");
@@ -218,6 +219,7 @@ var app = {
                     if(all_acked())
                     {
                         sector_idx += 1;
+                        document.getElementById("ota_text").innerHTML = "" +sector_idx/sector_max +"";
                         if(sector_idx == sector_max)
                         {
                             integrity_check_req_send();
