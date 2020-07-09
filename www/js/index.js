@@ -12,7 +12,7 @@ const fota_ctrl_type = {
     INTEGRITY_CHECK_RSP : 6,
 };
 const FOTA_IMAGE_ADDR = 0x1800D000;
-
+const MTU_SIZE_TO_REQ = 516;
 var app = {
     initialize: function() {
         this.bindEvents();
@@ -30,6 +30,7 @@ var app = {
     imageData : null,
     imageDigestData : null,
     signatureData : null,
+    seg_data_length_max : 23 - 4,
     readImageFile: function(e) {
         let reader = new FileReader();
         reader.onload = function(e) {
@@ -115,6 +116,13 @@ var app = {
                 startFOTAButton.dataset.deviceId = deviceId;
                 disconnectButton.dataset.deviceId = deviceId;
                 app.showDetailPage();
+                ble.requestMtu(deviceId,MTU_SIZE_TO_REQ,function(mtu){
+                    console.log("mtu:"+mtu);
+                    app.seg_data_length_max = mtu - 4;
+                },function()
+                {
+                    console.warn("Failed to request MTU.");
+                });
             };
         ble.stopScan();
         ble.connect(deviceId, onConnect, app.onError);
@@ -152,9 +160,8 @@ var app = {
         }
         function image_send()
         {
-            const SEG_DATA_LENGTH_MAX = 19;
             const SECTOR_SIZE = 4096;
-            const ACK_BUF_LENGTH = 27;
+            const ack_buf_length = Math.ceil(Math.ceil(SECTOR_SIZE/app.seg_data_length_max)/8);
             let sector_idx = 0;
             let sector_max = Math.ceil(app.imageData.length/SECTOR_SIZE);
             function image_sector_send()
@@ -168,7 +175,7 @@ var app = {
                     sector_data = app.imageData.slice(SECTOR_SIZE*sector_idx,SECTOR_SIZE*(sector_idx+1));
                 }
                 let seg_idx = 0;
-                let ack = new Uint8Array(ACK_BUF_LENGTH);
+                let ack = new Uint8Array(ack_buf_length);
                 function new_sector_cmd_send()
                 {
                     let new_sector_cmd = new Uint8Array(3);
@@ -182,16 +189,23 @@ var app = {
                     {
                         seg_idx += 1;
                     }
-                    if(seg_idx < Math.ceil(SECTOR_SIZE/SEG_DATA_LENGTH_MAX))
+                    if(seg_idx < Math.ceil(SECTOR_SIZE/app.seg_data_length_max))
                     {
-                        let data_length = seg_idx == Math.ceil(SECTOR_SIZE/SEG_DATA_LENGTH_MAX) - 1 ? SECTOR_SIZE%SEG_DATA_LENGTH_MAX : SEG_DATA_LENGTH_MAX;
+                        let data_length;
+                        if(seg_idx == Math.ceil(SECTOR_SIZE/app.seg_data_length_max) - 1 )
+                        {
+                            data_length = SECTOR_SIZE%app.seg_data_length_max ? SECTOR_SIZE%app.seg_data_length_max : app.seg_data_length_max;
+                        }else
+                        {
+                            data_length = app.seg_data_length_max;
+                        }
                         let data_att = new Uint8Array(data_length + 1);
                         data_att[0] = seg_idx;
-                        if(data_length == SEG_DATA_LENGTH_MAX)
+                        if(data_length == app.seg_data_length_max)
                         {
-                            data_att.set(sector_data.slice(SEG_DATA_LENGTH_MAX*seg_idx,SEG_DATA_LENGTH_MAX*(seg_idx + 1)),1);
+                            data_att.set(sector_data.slice(app.seg_data_length_max*seg_idx,app.seg_data_length_max*(seg_idx + 1)),1);
                         }else{
-                            data_att.set(sector_data.slice(SEG_DATA_LENGTH_MAX*seg_idx),1);
+                            data_att.set(sector_data.slice(app.seg_data_length_max*seg_idx),1);
                         }
                         ble.writeWithoutResponse(deviceId,fota_svc_uuid,fota_data_char_uuid,data_att.buffer,segment_data_send);
                         seg_idx += 1;
@@ -210,10 +224,10 @@ var app = {
                     console.log("max_sector: " + sector_max + " ,current sector: " + sector_idx + " , ack: " + ack);
                     function all_acked()
                     {
-                        let ack_all = new Uint8Array(ACK_BUF_LENGTH);
+                        let ack_all = new Uint8Array(ack_buf_length);
                         ack_all.fill(0xff);
-                        return ack_all.every(function(element, index) {
-                            return element === ack[index]; 
+                        return ack.every(function(element, index) {
+                            return (element & ack_all[index]) == element; 
                         });
                     }
                     if(all_acked())
@@ -272,9 +286,9 @@ var app = {
             }
         }
         function start_req_send(){
-            let ctrl_cmd = new Uint8Array(9);
+            let ctrl_cmd = new Uint8Array(13);
             ctrl_cmd[0] = fota_ctrl_type.START_REQ;
-            ctrl_cmd.set(new Uint8Array(new Uint32Array([FOTA_IMAGE_ADDR,app.imageData.length]).buffer),1);
+            ctrl_cmd.set(new Uint8Array(new Uint32Array([FOTA_IMAGE_ADDR,app.imageData.length,app.seg_data_length_max]).buffer),1);
             ble.write(deviceId,fota_svc_uuid,fota_ctrl_char_uuid,ctrl_cmd.buffer);
         }
         if(app.signatureData != null)
