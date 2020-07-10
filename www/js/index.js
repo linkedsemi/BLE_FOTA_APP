@@ -12,7 +12,7 @@ const fota_ctrl_type = {
     INTEGRITY_CHECK_RSP : 6,
 };
 const FOTA_IMAGE_ADDR = 0x1800D000;
-const MTU_SIZE_TO_REQ = 516;
+const MTU_SIZE_TO_REQ = 517;
 var app = {
     initialize: function() {
         this.bindEvents();
