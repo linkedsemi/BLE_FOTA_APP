@@ -25,7 +25,11 @@ var app = {
         refreshButton.addEventListener('touchstart', this.refreshDeviceList, false);
         startFOTAButton.addEventListener('touchstart', this.startFOTA, false);
         disconnectButton.addEventListener('touchstart', this.disconnect, false);
-        deviceList.addEventListener('touchstart', this.connect, false); // assume not scrolling
+        deviceList.addEventListener('touchstart', this.selectDev, false);
+        connectButton.addEventListener('touchstart',this.connect,false);
+    },
+    selectDev: function(e){
+        document.getElementById("selectedDevice").innerHTML = e.target.dataset.deviceId;
     },
     imageData : null,
     imageDigestData : null,
@@ -106,7 +110,7 @@ var app = {
     },
     peer_info: null,
     connect: function(e) {
-        var deviceId = e.target.dataset.deviceId,
+        var deviceId = document.getElementById("selectedDevice").innerHTML,
             onConnect = function(info) {
                 console.log(info);
                 app.peer_info = info;
