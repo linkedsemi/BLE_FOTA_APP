@@ -11,7 +11,6 @@ const fota_ctrl_type = {
     INTEGRITY_CHECK_REQ : 5,
     INTEGRITY_CHECK_RSP : 6,
 };
-const FOTA_IMAGE_ADDR = 0x1800D000;
 const MTU_SIZE_TO_REQ = 517;
 var app = {
     initialize: function() {
@@ -292,7 +291,8 @@ var app = {
         function start_req_send(){
             let ctrl_cmd = new Uint8Array(13);
             ctrl_cmd[0] = fota_ctrl_type.START_REQ;
-            ctrl_cmd.set(new Uint8Array(new Uint32Array([FOTA_IMAGE_ADDR,app.imageData.length,app.seg_data_length_max]).buffer),1);
+            let ota_addr = parseInt(document.getElementById("OTAAddr").value,16);
+            ctrl_cmd.set(new Uint8Array(new Uint32Array([ota_addr,app.imageData.length,app.seg_data_length_max]).buffer),1);
             ble.write(deviceId,fota_svc_uuid,fota_ctrl_char_uuid,ctrl_cmd.buffer);
         }
         if(app.signatureData != null)
