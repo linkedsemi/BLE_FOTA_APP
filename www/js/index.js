@@ -11,7 +11,7 @@ const fota_ctrl_type = {
     INTEGRITY_CHECK_REQ : 5,
     INTEGRITY_CHECK_RSP : 6,
 };
-const MTU_SIZE_TO_REQ = 517;
+const MTU_SIZE_TO_REQ = 512;
 var app = {
     initialize: function() {
         this.bindEvents();
