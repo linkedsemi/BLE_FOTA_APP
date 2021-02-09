@@ -63,31 +63,6 @@ var app = {
     },
     onDeviceReady: function() {
         console.log("on device ready");
-        /*
-        var permissions = cordova.plugins.permissions;
-        function permission_error(){
-            console.warn("read storage permission error")
-        }
-        permissions.hasPermission(permissions.CAMERA, function( status ){
-            if ( status.hasPermission ) {
-              console.log("Yes :D ");
-            }
-            else {
-              console.warn("No :( ");
-            }
-          });
-          
-        permissions.requestPermission(permissions.READ_EXTERNAL_STORAGE, function(status){
-            if( !status.hasPermission ) 
-            {
-                permission_error();
-            }else
-            {
-                console.log("read storage permitted")
-            }
-        }, permission_error);
-        */
-        //app.refreshDeviceList();
     },
     refreshDeviceList: function() {
         deviceList.innerHTML = ''; // empties the list
@@ -102,7 +77,7 @@ var app = {
                 'RSSI: ' + device.rssi + '&nbsp;|&nbsp;' +
                 device.id;
 
-        listItem.dataset.deviceId = device.id;  // TODO
+        listItem.dataset.deviceId = device.id;
         listItem.innerHTML = html;
         deviceList.appendChild(listItem);
 
@@ -113,9 +88,6 @@ var app = {
             onConnect = function(info) {
                 console.log(info);
                 app.peer_info = info;
-                // TODO check if we have the battery service
-                // TODO check if the battery service can notify us
-                //ble.startNotification(deviceId, battery.service, battery.level, app.onBatteryLevelChange, app.onError);
                 startFOTAButton.dataset.deviceId = deviceId;
                 disconnectButton.dataset.deviceId = deviceId;
                 app.showDetailPage();
@@ -173,6 +145,15 @@ var app = {
                 if(sector_idx == sector_max - 1)
                 {
                     sector_data = app.imageData.slice(SECTOR_SIZE*sector_idx);
+                    if(sector_data.length<SECTOR_SIZE)
+                    {
+                        let i= SECTOR_SIZE - 1;
+                        while(i>=sector_data.length)
+                        {
+                            sector_data[i] = 0xff;
+                            i -= 1;
+                        }
+                    }
                 }else
                 {
                     sector_data = app.imageData.slice(SECTOR_SIZE*sector_idx,SECTOR_SIZE*(sector_idx+1));
@@ -224,16 +205,22 @@ var app = {
                 function ack_read(data)
                 {
                     ack = new Uint8Array(data);
-                    console.log("max_sector: " + sector_max + " ,current sector: " + sector_idx + " , ack: " + ack);
-                    function all_acked()
+                    function ack_check()
                     {
-                        let ack_all = new Uint8Array(ack_buf_length);
-                        ack_all.fill(0xff);
                         return ack.every(function(element, index) {
-                            return (element & ack_all[index]) == element; 
+                            if(index == ack_buf_length - 1)
+                            {
+                                if(Math.ceil(SECTOR_SIZE/app.seg_data_length_max)%8)
+                                {
+                                    return (1<<(Math.ceil(SECTOR_SIZE/app.seg_data_length_max)%8)) - 1 == element;
+                                }
+                            }
+                            return index>=ack_buf_length ? true : element == 0xff;
                         });
                     }
-                    if(all_acked())
+                    let all_acked = ack_check();
+                    console.log("max_sector: " + sector_max + " ,current sector: " + sector_idx + " , ack: " + ack,', all_acked: ' + all_acked);
+                    if(all_acked)
                     {
                         sector_idx += 1;
                         document.getElementById("ota_text").innerHTML = "" +sector_idx/sector_max +"";
