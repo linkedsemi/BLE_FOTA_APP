@@ -119,6 +119,7 @@ var app = {
             case fota_ctrl_type.INTEGRITY_CHECK_RSP:
                 console.log("integrity check status: " + data[1]);
                 document.getElementById("ota_text").innerHTML = " OTA complete, status:" + data[1];
+                ble.disconnect(deviceId);
             break;
             default:
                 console.error("error indication type");
