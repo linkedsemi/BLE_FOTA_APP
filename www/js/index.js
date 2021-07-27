@@ -57,7 +57,7 @@ var app = {
     readSignatureFile : function(e){
         let reader = new FileReader();
         reader.onload = function(e) {
-            app.signatureData = e.target.result;
+            app.signatureData = new Uint8Array(e.target.result);
         };
         reader.readAsArrayBuffer(selectSignature.files[0]);
     },
