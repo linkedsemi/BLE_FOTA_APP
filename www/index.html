@@ -20,15 +20,18 @@
             </div>
             <div id="detailPage">
                 <div id="FOTAService"></div>
-                <button id="startFOTAButton">Start FOTA</button>
-                <button id="disconnectButton">Disconnect</button>
-                <input type="text" id="OTAAddr" value="0x18020000">Set OTA Address</input>
-                <input type="file" id="selectImage">Select Image File</input>
-                <input type="file" id="selectSignature">Select Signature File</input>
+                <button id="startFOTAButton">Start FOTA</button><button id="disconnectButton">Disconnect</button><br/>
+                <input type="text" id="OTAAddr" value="0x">Set OTA Address</input><br/>
+                <input type="file" id="selectImage">Select Image File</input><br/>
+                <input type="file" id="selectSignature">Select Signature File</input><br/>
+                <input type="checkbox" id="reboot" checked="checked">Need Reboot</input><br/>
+                <input type="checkbox" id="eraseSettings" checked="checked">Settings Erase Req</input><br/>
+                <input type="text" id="fwCopySrcAddr" value="0x0">fw Copy Src Addr</input><br/>
+                <input type="text" id="fwCopyDstAddr" value="0x0">fw Copy Dst Addr</input><br/>
+                <input type="text" id="fwCopySize" value="0x0">fw Copy Size</input><br/>
+                <input type="text" id="bootAddr" value="0x0">Boot Addr</input><br/>
                 <hr />
-                <p id="ota_text">This is a paragraph</p>
-
-
+                <p id="ota_text"></p>
             </div>
         </div>
         <script type="text/javascript" src="cordova.js"></script>

@@ -10,6 +10,7 @@ const fota_ctrl_type = {
     NEW_SECTOR: 4,
     INTEGRITY_CHECK_REQ : 5,
     INTEGRITY_CHECK_RSP : 6,
+    FINISH : 7,
 };
 const MTU_SIZE_TO_REQ = 517;
 var app = {
@@ -26,6 +27,14 @@ var app = {
         disconnectButton.addEventListener('touchstart', this.disconnect, false);
         deviceList.addEventListener('touchstart', this.selectDev, false);
         connectButton.addEventListener('touchstart',this.connect,false);
+        reboot.addEventListener('change',this.rebootEnable,false);
+    },
+    rebootEnable: function(e) {
+        document.getElementById("fwCopySrcAddr").disabled = !e.target.checked;
+        document.getElementById("fwCopyDstAddr").disabled = !e.target.checked;
+        document.getElementById("fwCopySize").disabled = !e.target.checked;
+        document.getElementById("bootAddr").disabled = !e.target.checked;
+        document.getElementById("eraseSettings").disabled = !e.target.checked;
     },
     selectDev: function(e){
         document.getElementById("selectedDevice").innerHTML = e.target.dataset.deviceId;
@@ -119,7 +128,7 @@ var app = {
             case fota_ctrl_type.INTEGRITY_CHECK_RSP:
                 console.log("integrity check status: " + data[1]);
                 document.getElementById("ota_text").innerHTML = " OTA complete, status:" + data[1];
-                ble.disconnect(deviceId);
+                finish_cmd_send(!data[1]);
             break;
             default:
                 console.error("error indication type");
@@ -128,6 +137,23 @@ var app = {
         }, function(error){
             console.log(error);
         });
+        function finish_cmd_sent_callback()
+        {
+            ble.disconnect(deviceId);
+        }
+        function finish_cmd_send(succeed)
+        {
+            let finish_cmd = new Uint8Array(17);
+            finish_cmd[0] = fota_ctrl_type.FINISH;
+            reboot = document.getElementById("reboot").checked ? 0x2 : 0;
+            eraseSettings = document.getElementById("eraseSettings").checked ? 0x4 : 0;
+            finish_cmd.set(new Uint8Array(new Uint16Array([succeed&0x1|reboot|eraseSettings]).buffer),1);
+            finish_cmd.set(new Uint8Array(new Uint16Array([parseInt(document.getElementById("fwCopySize").value,16)]).buffer),3);
+            finish_cmd.set(new Uint8Array(new Uint32Array([parseInt(document.getElementById("fwCopySrcAddr").value,16)]).buffer),5);
+            finish_cmd.set(new Uint8Array(new Uint32Array([parseInt(document.getElementById("fwCopyDstAddr").value,16)]).buffer),9);
+            finish_cmd.set(new Uint8Array(new Uint32Array([parseInt(document.getElementById("bootAddr").value,16)]).buffer),13);
+            ble.write(deviceId,fota_svc_uuid,fota_ctrl_char_uuid,finish_cmd.buffer,finish_cmd_sent_callback);
+        }
         function integrity_check_req_send()
         {
             let integrity_check_req = new Uint8Array(1);
@@ -241,7 +267,6 @@ var app = {
             }
             image_sector_send();
         }
-        
         let i = 0;
         function signature_send(){
             if(i <4)
