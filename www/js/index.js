@@ -139,15 +139,16 @@ var app = {
         });
         function finish_cmd_sent_callback()
         {
+            document.getElementById("ota_text").innerHTML = " finish cmd sent";
             ble.disconnect(deviceId);
         }
         function finish_cmd_send(succeed)
         {
             let finish_cmd = new Uint8Array(17);
             finish_cmd[0] = fota_ctrl_type.FINISH;
-            reboot = document.getElementById("reboot").checked ? 0x2 : 0;
-            eraseSettings = document.getElementById("eraseSettings").checked ? 0x4 : 0;
-            finish_cmd.set(new Uint8Array(new Uint16Array([succeed&0x1|reboot|eraseSettings]).buffer),1);
+            let rebootValue = document.getElementById("reboot").checked ? 0x2 : 0;
+            let eraseSettingsValue = document.getElementById("eraseSettings").checked ? 0x4 : 0;
+            finish_cmd.set(new Uint8Array(new Uint16Array([succeed&0x1|rebootValue|eraseSettingsValue]).buffer),1);
             finish_cmd.set(new Uint8Array(new Uint16Array([parseInt(document.getElementById("fwCopySize").value,16)]).buffer),3);
             finish_cmd.set(new Uint8Array(new Uint32Array([parseInt(document.getElementById("fwCopySrcAddr").value,16)]).buffer),5);
             finish_cmd.set(new Uint8Array(new Uint32Array([parseInt(document.getElementById("fwCopyDstAddr").value,16)]).buffer),9);
