@@ -148,8 +148,7 @@ var app = {
             finish_cmd[0] = fota_ctrl_type.FINISH;
             let rebootValue = document.getElementById("reboot").checked ? 0x2 : 0;
             let eraseSettingsValue = document.getElementById("eraseSettings").checked ? 0x4 : 0;
-            finish_cmd.set(new Uint8Array(new Uint16Array([succeed&0x1|rebootValue|eraseSettingsValue]).buffer),1);
-            finish_cmd.set(new Uint8Array(new Uint16Array([parseInt(document.getElementById("fwCopySize").value,16)]).buffer),3);
+            finish_cmd.set(new Uint8Array(new Uint32Array([parseInt(document.getElementById("fwCopySize").value,16)<<8|succeed&0x1|rebootValue|eraseSettingsValue]).buffer),1);
             finish_cmd.set(new Uint8Array(new Uint32Array([parseInt(document.getElementById("fwCopySrcAddr").value,16)]).buffer),5);
             finish_cmd.set(new Uint8Array(new Uint32Array([parseInt(document.getElementById("fwCopyDstAddr").value,16)]).buffer),9);
             finish_cmd.set(new Uint8Array(new Uint32Array([parseInt(document.getElementById("bootAddr").value,16)]).buffer),13);
